@@ -1,0 +1,244 @@
+{
+  "name": "lab3-resumen",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e67511c8-ded4-41f8-9bb6-70117c1518d5",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "7KXvh0amjzZLIgaY",
+          "mode": "list",
+          "cachedResultName": "registro_devoluciones",
+          "cachedResultUrl": "/projects/RlD2xX5NLW73Gum3/datatables/7KXvh0amjzZLIgaY"
+        }
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1.1,
+      "position": [
+        160,
+        -16
+      ],
+      "id": "3c0d83d8-ed4f-4d27-ac96-43f9f62a3506",
+      "name": "Get row(s)"
+    },
+    {
+      "parameters": {
+        "fieldsToSummarize": {
+          "values": [
+            {
+              "aggregation": "sum",
+              "field": "monto"
+            },
+            {
+              "field": "id_solicitud"
+            }
+          ]
+        },
+        "fieldsToSplitBy": "ruta",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.summarize",
+      "typeVersion": 1.1,
+      "position": [
+        384,
+        -16
+      ],
+      "id": "113851e1-86ed-440d-9604-3aa8b0db65af",
+      "name": "Summarize"
+    },
+    {
+      "parameters": {
+        "fieldsToSummarize": {
+          "values": [
+            {
+              "aggregation": "sum",
+              "field": "monto"
+            },
+            {
+              "aggregation": "sum",
+              "field": "id_solicitud"
+            },
+            {
+              "aggregation": "sum",
+              "field": "sum_monto"
+            },
+            {
+              "aggregation": "sum",
+              "field": "count_id_solicitud"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.summarize",
+      "typeVersion": 1.1,
+      "position": [
+        656,
+        -16
+      ],
+      "id": "5cf218fa-6d10-4441-9a94-08805856ea33",
+      "name": "Summarize1"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "resumen_rutas",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        656,
+        128
+      ],
+      "id": "4f54958d-c720-4ac0-8bed-e0bdf4fe174b",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ff172ad2-24fe-40de-8b55-6cdd0f40e95d",
+              "name": "=mensaje",
+              "value": "={{(() => { const r=$json.resumen_rutas; const ap=r.find(x=>String(x.ruta).includes('APROBACION')); const rev=r.find(x=>String(x.ruta).includes('REVISION')); const rec=r.find(x=>String(x.ruta).includes('RECHAZO')); const total=r.reduce((s,x)=>s+(x.count_id_solicitud||0),0); const monto=r.reduce((s,x)=>s+(x.sum_monto||0),0); const aprobadas=ap?.count_id_solicitud||0; const tasa=total>0?(aprobadas/total*100).toFixed(2):'0.00'; return `Resumen diario AndesHogar\\n\\nAPROBACION: ${aprobadas} solicitudes - $${ap?.sum_monto||0}\\nREVISION: ${rev?.count_id_solicitud||0} solicitudes - $${rev?.sum_monto||0}\\nRECHAZO: ${rec?.count_id_solicitud||0} solicitudes - $${rec?.sum_monto||0}\\n\\nTotal solicitudes: ${total}\\nMonto total del dia: $${monto}\\nTasa de aprobacion automatica: ${tasa}%`; })()}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        880,
+        128
+      ],
+      "id": "1e37d648-695a-4850-bccf-a59e5a96348e",
+      "name": "Preparar resumen diario"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "13806c2f-52db-4501-b120-ac5e00fa9b23",
+              "name": "estado",
+              "value": "enviado",
+              "type": "string"
+            },
+            {
+              "id": "65defeb8-912a-4963-a76a-09c5528601d4",
+              "name": "=mensaje",
+              "value": "={{ $json.mensaje }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        1104,
+        128
+      ],
+      "id": "886a8d46-b434-4257-a2c2-251bec991d78",
+      "name": "resultado envio resumen"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)": {
+      "main": [
+        [
+          {
+            "node": "Summarize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarize": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Summarize1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Preparar resumen diario",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar resumen diario": {
+      "main": [
+        [
+          {
+            "node": "resultado envio resumen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "aab685bc-efef-42db-974b-6dc1549dbade",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "d1ccc73d9f3b001ddaf026bb7d1140012ce3c5a3d5668aa0c082ac9170c6f48f"
+  },
+  "nodeGroups": [],
+  "id": "O9AFZohyBDzx8P6H",
+  "tags": []
+}
